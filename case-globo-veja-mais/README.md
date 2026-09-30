@@ -8,8 +8,7 @@
 
 O time de recomendação do g1 mantém a oferta **Leia Mais**, que sugere matérias para a pessoa usuária com base no que ela está lendo no momento. Este projeto endereça especificamente o componente **"Veja Mais"**, que toma como base a matéria atual e recomenda matérias similares a ela.
 
-Exemplo de matéria de referência:
-`https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml`
+Exemplo de matéria de referência: [https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml](https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml)
 
 Como o g1 já possui outras ofertas de recomendação (por exemplo, baseadas em perfil e consumo da pessoa usuária), o "Veja Mais" foi definido como uma oferta **exclusivamente content-based**, para não sobrepor as demais: a recomendação depende apenas do conteúdo da matéria, não de quem está lendo.
 
@@ -110,3 +109,4 @@ Não há rótulos de relevância no dataset, então a validação combina:
 - **Recência**: o dataset não traz data de publicação; em produção, é esperado que a recência da matéria influencie o ranking, já que conteúdo jornalístico perde relevância com o tempo.
 - **Atualização do índice**: definir a frequência de recálculo das recomendações conforme o volume de publicações do g1.
 - **Avaliação online**: complementar a validação offline com testes A/B (CTR no componente "Veja Mais") após o deploy.
+  
