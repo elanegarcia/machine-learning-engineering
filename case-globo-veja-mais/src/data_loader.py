@@ -1,5 +1,3 @@
-# Implementa a carga dos dados
-
 import ast
 import numpy as np
 import pandas as pd
