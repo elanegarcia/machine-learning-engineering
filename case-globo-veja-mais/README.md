@@ -8,7 +8,7 @@
 
 O time de recomendação do g1 mantém a oferta **Leia Mais**, que sugere matérias para a pessoa usuária com base no que ela está lendo no momento. Este projeto endereça especificamente o componente **"Veja Mais"**, que toma como base a matéria atual e recomenda matérias similares a ela.
 
-Exemplo de matéria de referência: [https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml](https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml)
+Exemplo de matéria de referência do enunciado: [https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml](https://g1.globo.com/pe/caruaru-regiao/noticia/2024/09/11/deolane-bezerra-segue-presa-apos-audiencia-de-custodia.ghtml)
 
 Como o g1 já possui outras ofertas de recomendação (por exemplo, baseadas em perfil e consumo da pessoa usuária), o "Veja Mais" foi definido como uma oferta **exclusivamente content-based**, para não sobrepor as demais: a recomendação depende apenas do conteúdo da matéria, não de quem está lendo.
 
@@ -34,14 +34,15 @@ Com base no dataset fornecido, criar uma função em Python que, dada a matéria
 
 ## Dados
 
-- `dataset_rec.csv`: 100 matérias, colunas `url`, `title`, `embedding` (vetor de 768 dimensões, salvo como string).
+- `data/dataset_rec.csv`: 100 matérias do domínio [gshow.globo.com](gshow.globo.com), colunas `url`, `title`, `embedding` (vetor de 768 dimensões, salvo como string).
 - Sem valores nulos e sem URLs duplicadas.
 
 ### Achados da análise exploratória
 
 - Os embeddings **não vêm normalizados** (norma L2 varia de ~6,0 a ~7,8).
 - O espaço é **anisotrópico**: o cosseno médio entre pares aleatórios de matérias é ~0,66 (mínimo ~0,46), ou seja, tudo tende a parecer parecido com tudo, o que reduz o poder discriminativo do ranking bruto.
-- **Centralizando** os vetores (subtraindo o vetor médio) antes de normalizar, o cosseno médio cai para próximo de 0, e a ordenação passa a refletir melhor a similaridade temática real (validado por inspeção qualitativa dos vizinhos mais próximos).
+- **Centralizando** os vetores (subtraindo o vetor médio) antes de normalizar, o cosseno médio cai para próximo de 0, e a ordenação passa a refletir melhor a similaridade temática real.
+- Essa melhora se confirma na saída real gerada pelo pipeline: para a matéria de exemplo sobre Maíra Cardi, a recomendação #1 (sobre o mesmo tema — a treta com Belle Silva) ficou com score 0,32, bem abaixo da similaridade média (~0,6+) que o cosseno cru geraria entre itens sem relação nenhuma. Isso confirma que, após a centralização, o score reflete relevância real, não apenas "proximidade genérica" do espaço.
 - Por isso, a solução usa **centralização + normalização L2** antes do cálculo de similaridade por produto interno (cosseno).
 
 ## Abordagem
@@ -56,7 +57,7 @@ Com apenas 100 itens, uma matriz de similaridade completa (`X @ X.T`) é suficie
 
 ## Formato de saída
 
-`recommendations.csv` com as colunas:
+`output/recommendations.csv` com as colunas:
 
 | coluna | tipo | descrição |
 |---|---|---|
@@ -69,42 +70,78 @@ Com apenas 100 itens, uma matriz de similaridade completa (`X @ X.T`) é suficie
 import json
 recs = json.loads(row["recommended_urls"])  # -> [[url, score], ...]
 ```
+Obs: O CSV de saída foi incluído no repositório para facilitar a avaliação. Em um ambiente de produção real, ele não seria versionado, pois é gerado automaticamente pelo pipeline.
 
 ## Estrutura do repositório
 
 ```
-.
+case-globo-veja-mais/
 ├── README.md
-├── recommender.py       # funções de carga, pré-processamento e recomendação
-├── run.py                # gera recommendations.csv a partir do dataset_rec.csv
+├── requirements.txt
+├── .gitignore
+├── data/
+│   └── dataset_rec.csv
+├── src/
+│   ├── __init__.py
+│   ├── data_loader.py        
+│   ├── preprocessing.py     
+│   ├── recommender.py       
+│   └── run.py              
 ├── tests/
+│   ├── __init__.py
+│   ├── test_data_loader.py
+│   ├── test_preprocessing.py
 │   └── test_recommender.py
-├── analysis.ipynb        # EDA e comparação de variantes (cru vs. centralizado)
-├── dataset_rec.csv
-└── recommendations.csv   # saída gerada
+├── notebooks/
+│   └── analysis.ipynb
+├── sanity_check.py         
+└── output/
+    └── recommendations.csv   
 ```
 
 ## Como rodar
+Ambiente testado com Python 3.14 e numpy 2.5.3.
 
 ```bash
-pip install -r requirements.txt   # pandas, numpy
-python run.py --input dataset_rec.csv --output recommendations.csv --k 10
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+python src/run.py --input data/dataset_rec.csv --output output/recommendations.csv --k 10
+```
+
+## Como testar
+
+```bash
+pytest tests/ -v
+```
+
+Cobertura:
+
+- data_loader: caso feliz, coluna obrigatória ausente, dimensões de embedding inconsistentes entre linhas, ordem das linhas preservada.
+- preprocessing: norma unitária após centralizar/normalizar, shape preservado, tratamento de vetor nulo após centralização (evita divisão por zero), e a própria melhora de discriminação (centralizado reduz a similaridade média entre pares).
+- recommender: sempre 10 itens, nunca recomenda a própria matéria, sem duplicatas, scores ordenados de forma decrescente.
+
+Além dos testes automatizados, sanity_check.py roda uma checagem em massa direto sobre o output/recommendations.csv já gerado, validando o contrato de saída em todas as 100 linhas (não só em dados sintéticos de teste):
+
+```bash
+python sanity_check.py
 ```
 
 ## Como validar sem ground truth
 
 Não há rótulos de relevância no dataset, então a validação combina:
 
-- **Inspeção qualitativa**: amostragem de matérias de referência e seus top-10, checando se o tema bate.
+- **Inspeção qualitativa**: amostragem de matérias de referência e seus top-10, checando se o tema bate (feito no notebooks/analysis.ipynb e confirmado no exemplo real citado na seção de achados acima).
 - **Comparação de variantes**: cosseno cru vs. cosseno com vetores centralizados, para justificar a escolha do pré-processamento.
 - **Métricas proxy**:
   - *coverage*: proporção de matérias do catálogo que aparecem em ao menos uma lista de recomendação;
   - *hubness*: distribuição de quantas vezes cada matéria é recomendada, para identificar itens que dominam os rankings de forma desproporcional.
-- **Testes automatizados**: cada lista tem exatamente 10 itens, não contém a própria matéria, não tem duplicatas e está ordenada por score decrescente.
+- **Testes automatizados + sanity check em massa:**: cada lista tem exatamente 10 itens, não contém a própria matéria, não tem duplicatas e está ordenada por score decrescente — validado tanto em dados sintéticos (pytest) quanto no output real de 100 matérias (sanity_check.py).
 
 ## Limitações e próximos passos
 
-- **Near-duplicates**: alguns pares de matérias têm cosseno muito alto (~0,97), indicando conteúdo quase idêntico (ex.: coberturas do mesmo fato). Dependendo do objetivo de produto, isso pode ser desejável ou não; um re-ranking com **MMR (Maximal Marginal Relevance)** permitiria balancear relevância e diversidade via um parâmetro ajustável.
+- **Near-duplicates**: alguns pares de matérias têm cosseno muito alto (~0,97), indicando conteúdo quase idêntico (ex.: coberturas do mesmo fato). Dependendo do objetivo de produto, isso pode ser desejável ou não; um re-ranking com MMR (Maximal Marginal Relevance) permitiria balancear relevância e diversidade via um parâmetro ajustável.
 - **Cold start**: matérias novas, sem embedding pré-calculado, precisam ser embedadas no momento da publicação antes de entrarem no índice de recomendação.
 - **Recência**: o dataset não traz data de publicação; em produção, é esperado que a recência da matéria influencie o ranking, já que conteúdo jornalístico perde relevância com o tempo.
 - **Atualização do índice**: definir a frequência de recálculo das recomendações conforme o volume de publicações do g1.
