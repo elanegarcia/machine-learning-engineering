@@ -1,5 +1,3 @@
-# Implementa o pré-processamento dos dados
-
 import numpy as np
 
 def center_and_normalize(embeddings: np.ndarray) -> np.ndarray:

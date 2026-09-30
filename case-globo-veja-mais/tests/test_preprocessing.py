@@ -5,12 +5,12 @@ from src.preprocessing import center_and_normalize
 
 def test_center_and_normalize_mean_is_near_zero():
     rng = np.random.default_rng(0)
-    embeddings = rng.normal(loc=5.0, scale=2.0, size=(50, 16))  # média deslocada de propósito
+    embeddings = rng.normal(loc=5.0, scale=2.0, size=(50, 16))
 
     result = center_and_normalize(embeddings)
 
     # a média dos vetores CENTRALIZADOS (antes de normalizar) deve ser ~0;
-    # aqui validamos indiretamente checando que o resultado não herda o offset original
+    # aqui valido indiretamente checando que o resultado não herda o offset original
     assert abs(result.mean()) < 0.5
 
 
@@ -37,7 +37,7 @@ def test_center_and_normalize_handles_zero_vector_after_centering():
     # a função não pode levantar erro de divisão por zero nesse caso
     embeddings = np.array([
         [1.0, 1.0],
-        [1.0, 1.0],   # igual à média -> vira vetor nulo após centralizar
+        [1.0, 1.0],
         [3.0, -1.0],
     ])
 

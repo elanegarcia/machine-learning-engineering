@@ -1,5 +1,3 @@
-# tests/test_recommender.py
-
 import numpy as np
 import pandas as pd
 from src.recommender import build_recommendations
