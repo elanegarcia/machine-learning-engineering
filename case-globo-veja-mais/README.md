@@ -72,6 +72,16 @@ recs = json.loads(row["recommended_urls"])  # -> [[url, score], ...]
 ```
 Obs: O CSV de saída foi incluído no repositório para facilitar a avaliação. Em um ambiente de produção real, ele não seria versionado, pois é gerado automaticamente pelo pipeline.
 
+## Tomada de decisão
+
+| Decisão | Alternativas consideradas | Por que essa escolha |
+|---|---|---|
+| Centralizar + normalizar L2 antes do cosseno | Cosseno cru; distância euclidiana | A EDA mostrou espaço anisotrópico (cosseno médio ~0,66 entre itens aleatórios); centralizar resolveu isso sem adicionar complexidade |
+| Matriz de similaridade completa (`X @ X.T`) | Índice ANN (FAISS/HNSW) desde já | Com 100 itens, calcular tudo é trivial e mais simples de auditar; ANN é citado como próximo passo para escala |
+| Serializar `recommended_urls` como JSON no CSV | Lista Python serializada como string (`str(list)`) | JSON evita ambiguidade de parsing e é padrão de interoperabilidade entre linguagens/sistemas |
+| Excluir a própria matéria do ranking via `-inf` no score | Filtrar por comparação de índice depois de ordenar | Mais simples e garante que a matéria nunca aparece, mesmo antes do corte do top-k |
+| Não usar sinais de perfil/consumo | Modelo híbrido (conteúdo + colaborativo) | Fora do escopo definido no enunciado — o "Veja Mais" deve ser puramente content-based para não sobrepor outras ofertas do g1 |
+
 ## Estrutura do repositório
 
 ```
@@ -127,6 +137,30 @@ Além dos testes automatizados, sanity_check.py roda uma checagem em massa diret
 ```bash
 python sanity_check.py
 ```
+
+## Resultados
+
+- **Cobertura**: todas as 100 matérias receberam exatamente 10 recomendações, sem exceção.
+- **Consistência do contrato**: nenhuma matéria recomenda a si mesma, não há duplicatas nas listas, e os scores estão sempre ordenados de forma decrescente (validado em massa pelo `sanity_check.py`, além dos testes automatizados).
+- **Qualidade temática**: inspeção manual confirma que os vizinhos mais próximos pertencem ao mesmo assunto ou a assuntos correlatos. Exemplo real do pipeline:
+
+  **Matéria de entrada:**
+  `http://gshow.globo.com/tudo-mais/tv-e-famosos/noticia/maira-cardi-mostra-novos-prints-sobre-treta-com-mulher-de-thiago-silva.ghtml`
+  *"Maira Cardi ameaça expor 'a verdade' sobre história com mulher de Thiago Silva: 'Não me desafie'"*
+
+  **Top 5 recomendações retornadas:**
+
+  | score | título |
+  |---|---|
+  | 0,3203 | Maíra Cardi reafirma que Thiago Silva foi seu cliente e mostra áudio como prova |
+  | 0,2538 | Deborah Secco se diverte com revelação íntima sobre Hugo Moura: 'Exposto em rede nacional' |
+  | 0,2163 | Maíra Cardi X Belle Silva: entenda a treta sobre Thiago Silva ter feito (ou não) programa de emagrecimento |
+  | 0,2019 | Última famosa a deixar o No Limite, Carol Nakamura conta que foi julgada |
+  | 0,2001 | Deborah Secco revela detalhe íntimo de Hugo Moura no 'Sobre Nós Dois': 'Incrível' |
+
+  As posições #1 e #3 são sobre o mesmo fato exato (a treta Maíra Cardi/Thiago Silva/Belle Silva). As posições #2 e #5 trazem outro assunto do mesmo "gênero" editorial (fofoca de celebridade/revelação íntima), e a #4 é a mais fraca do grupo — mostra que, no fim da lista top-10, a relevância temática já começa a cair, o que é esperado e aceitável para a posição.
+- **Discriminação do ranking**: após a centralização dos embeddings, a similaridade média entre pares aleatórios de matérias caiu de ~0,66 (cosseno cru) para próximo de 0, evidenciando que o pré-processamento resolveu a anisotropia do espaço vetorial e tornou o ranking mais informativo.
+
 
 ## Como validar sem ground truth
 
