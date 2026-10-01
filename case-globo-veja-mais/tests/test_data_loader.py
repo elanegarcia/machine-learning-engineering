@@ -40,7 +40,7 @@ def test_load_dataset_missing_column_raises(tmp_path):
 def test_load_dataset_inconsistent_embedding_dims_raises(tmp_path):
     rows = [
         {"url": "http://a.com/1", "title": "Matéria 1", "embedding": str([0.1, 0.2, 0.3])},
-        {"url": "http://a.com/2", "title": "Matéria 2", "embedding": str([0.1, 0.2])},
+        {"url": "http://a.com/2", "title": "Matéria 2", "embedding": str([0.1, 0.2])},         # dimensão diferente
     ]
     path = _write_csv(tmp_path, rows)
 
