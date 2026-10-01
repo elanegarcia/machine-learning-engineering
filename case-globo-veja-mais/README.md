@@ -158,7 +158,7 @@ python sanity_check.py
   | 0,2019 | Última famosa a deixar o No Limite, Carol Nakamura conta que foi julgada |
   | 0,2001 | Deborah Secco revela detalhe íntimo de Hugo Moura no 'Sobre Nós Dois': 'Incrível' |
 
-  As posições #1 e #3 são sobre o mesmo fato exato (a treta Maíra Cardi/Thiago Silva/Belle Silva). As posições #2 e #5 trazem outro assunto do mesmo "gênero" editorial (fofoca de celebridade/revelação íntima), e a #4 é a mais fraca do grupo — mostra que, no fim da lista top-10, a relevância temática já começa a cair, o que é esperado e aceitável para a posição.
+  As posições #1 e #3 são sobre o mesmo fato exato (a treta Maíra Cardi/Thiago Silva/Belle Silva). As posições #2 e #5 trazem outro assunto do mesmo "gênero" editorial (fofoca de celebridade/revelação íntima), e a #4 é a mais fraca do grupo, mostra que, no fim da lista top-10, a relevância temática já começa a cair, o que é esperado e aceitável para a posição.
 - **Discriminação do ranking**: após a centralização dos embeddings, a similaridade média entre pares aleatórios de matérias caiu de ~0,66 (cosseno cru) para próximo de 0, evidenciando que o pré-processamento resolveu a anisotropia do espaço vetorial e tornou o ranking mais informativo.
 
 
